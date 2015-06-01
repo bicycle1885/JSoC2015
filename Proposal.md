@@ -72,6 +72,8 @@ Impact
 ------
 This will be a meaningful step toward sequence analysis because sequence search and alignment are indispensable building blocks of bioinformatics.
 Almost all of the existing programs related to this kind of sequence analysis are implemented in C, C++, and Java, but simplicity and dynamic nature of Julia would be appealing if comparable performance can be achieved.
+In addition, the succinct bit vector and the Wavelet matrix are applicable to implement various data structures including numeric sequences and graphs[6].
+That means many developers outside the BioJulia project will be able to enjoy the benefit of efficient data structures.
 
 
 About me
@@ -93,4 +95,4 @@ References
 3. Langmead, Ben, et al. "Ultrafast and memory-efficient alignment of short DNA sequences to the human genome." Genome Biol 10.3 (2009): R25.
 4. Burrows, Michael, and David J. Wheeler. "A block-sorting lossless data compression algorithm." (1994).
 5. Ferragina, Paolo, et al. "Compressed text indexes: From theory to practice."Journal of Experimental Algorithmics (JEA) 13 (2009): 12.
-
+6. Claude, Francisco, and Gonzalo Navarro. "The wavelet matrix." String Processing and Information Retrieval. Springer Berlin Heidelberg, 2012.
