@@ -58,16 +58,14 @@ For more details, please refer to the following links:
 
 Plan
 ----
-* June 15-30 - Choose and implement data structures
-     There are several variants of succinct data structures.
-     I will survey researches and try proposed data structures.
+* June 15-30 - Choose and implement data structures.
+    * There are several variants of succinct data structures. I will survey researches and try proposed data structures.
 * July 1-14 - Implement efficient operations and FM-index.
-     Fast and low memory constructions are needed when handling large data.
-     I will implement constructors, FM-index search, and other APIs at this point.
-* July 15-31: Specialization for BioJulia
-     Support search and alignment for biological sequences defined in BioJulia including short mismatches and gaps.
+    * Fast and low memory constructions are needed when handling large data. I will implement constructors, FM-index search, and other APIs at this point.
+* July 15-31: Specialization for BioJulia.
+    * Support search and alignment for biological sequences defined in BioJulia including short mismatches and gaps.
 * September 1-15: Debug and performance tuning.
-     Brush up details of the program.
+    * Brush up details of the program.
 
 
 Impact
