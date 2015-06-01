@@ -27,7 +27,7 @@ These data structures enable occurrence counts of characters for a sequence of a
 
 Since the BioJulia project already has basic data structures to represent sequences, I will implement these tools on the top of them for seamless integration.
 As for biological sequences, the alignment algorithm should allow small mismatches or gaps to be robust against noises and genetic variants.
-I will consult other implementations to handle short mismatches well.
+I will consult other implementations to handle short mismatches well (for example, [FM-index++](https://code.google.com/p/fmindex-plus-plus/) supports a text search within a specific edit distance).
 
 
 Demonstration
@@ -65,7 +65,7 @@ Plan
 * July 15-31: Specialization for BioJulia.
     * Support search and alignment for biological sequences defined in BioJulia including short mismatches and gaps.
 * September 1-15: Debug and performance tuning.
-    * Brush up details of the program.
+    * Brush up details of the program. Merging to BioJulia will be done.
 
 
 Impact
