@@ -87,6 +87,14 @@ I have about 1.5 years’ experience of intensive Julia programming and have dev
 
 I am one of founders of the [JuliaTokyo user group](http://julia.tokyo/) and we held meetups for three times in 2014 and 2015, the total turnout was about 150.
 
+One reason to propose this project is related to my research.
+At the current moment, the most frequently used languages in bioinformatics and genetics would be C++ and R.
+However, C++ requires deep knowledge of the language specs to write a code and lacks interactivity, even though programs written in C++ are often effective and run very fast.
+The R language has a powerful interactive environment, but becomes extremely inefficient when handling large data sets required in genetic analysis; waiting for minutes to get results of a simple analysis in an interactive session is annoying and distractive.
+This dilemmatic situation of scientific computing results in writing backend computation in C++ and frontend in R, but the situation does not get better at all because developers should learn both languages and bindings between them.
+I believe that Julia is a promising language to solve the problem in a fundamental way and will be a common tool in bioinformatics in the future.
+I aim to speed up this movement with this project.
+
 
 References
 ----------
