@@ -4,8 +4,8 @@
 Efficient data structures and algorithms for sequence analysis in BioJulia
 --------------------------------------------------------------------------
 
-Applicant: Kenta Sato (GitHub: @bicycle1885)
-Mentor: Daniel C. Jones (GitHub: @dcjones)
+* Applicant: Kenta Sato (GitHub: @bicycle1885)
+* Mentor: Daniel C. Jones (GitHub: @dcjones)
 
 
 Summary
@@ -33,18 +33,27 @@ I will consult other implementations to handle short mismatches well.
 Demonstration
 -------------
 I have made two new packages required to create the search engine in order to show the implementability of this project:
-* IndexedBitVectors.jl https://github.com/bicycle1885/IndexedBitVectors.jl
-* WaveletMatrices.jl https://github.com/bicycle1885/WaveletMatrices.jl
+* IndexedBitVectors.jl - https://github.com/bicycle1885/IndexedBitVectors.jl
+* WaveletMatrices.jl - https://github.com/bicycle1885/WaveletMatrices.jl
 
 IndexedBitVectors.jl implements a data structure like a bit vector, which allows some additional operations like bit count in constant time with small memory overhead.
 WaveletMatrices.jl is built on the top of IndexedBitVectors.jl, supporting similar operations on 8bit elements rather boolean elements.
 
 Using these data structures and the FM-index, I implemented a DNA fragment searcher in the human genome.
-It can calculate the number of occurrences of the query fragment in a chromosome for 10-100μ seconds while linear search requires nearly x1000 time (10-100m seconds).
+It can calculate the number of occurrences of the query fragment in a chromosome (about 51M length) for 10-50μ seconds while a linear searcher requires nearly x5000 time (50-100m seconds) for a short sequence.
+Some examples are listed below:
+
+*Search time in μs (best of three trials)*
+
+| Query DNA Fragment | FM-index  | Linear Search |
+|:------------------ | ---------:| -------------:|
+| 'AAA'              |        13 |       128,992 |
+| 'ACGTACGT'         |        27 |       111,608 |
+| 'TCTGGAGCCAGAAGC'  |        45 |        82,140 |
 
 For more details, please refer to the following links:
-https://github.com/bicycle1885/WaveletMatrices.jl#demo
-https://github.com/bicycle1885/WaveletMatrices.jl/blob/master/fmindex.jl
+* https://github.com/bicycle1885/WaveletMatrices.jl#demo
+* https://github.com/bicycle1885/WaveletMatrices.jl/blob/master/fmindex.jl
 
 
 Plan
@@ -76,7 +85,7 @@ I have about 1.5 years’ experience of intensive Julia programming and have dev
 * Snappy.jl - a binding to a fast compression library
 * ANMS.jl - a derivative-free multivariate optimization method with adaptive parameters for high dimensions
 
-I am one of founders of the JuliaTokyo user group and we held meetups for three times in 2014 and 2015, the total turnout was about 150.
+I am one of founders of the [JuliaTokyo user group](http://julia.tokyo/) and we held meetups for three times in 2014 and 2015, the total turnout was about 150.
 
 
 References
