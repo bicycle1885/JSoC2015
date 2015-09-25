@@ -3,29 +3,34 @@
 * Participant: Kenta Sato ([@bicycle1885](https://github.com/bicycle1885))
 * Mentor: Daniel C. Jones ([@dcjones](https://github.com/dcjones))
 
-Thanks to a grant from the Gordon and Betty Moore Foundation, I've enjoyed the Julia Summer of Code 2015 program administered by the NumFOCUS and a travel to the JuliaCon 2015.
-Though Julia had lots of fancy packages for numerical computing on floating-point numbers, it lacked tools that are fundamental in bioinformatics.
-My project was about creating packages of sequence analysis for bioinformatics, especially an index for full-text search.
-In the course towards this destination, I've created and released several packages that are useful as a building block for other data structures.
-I'll introduce you these packages in this post.
+Thanks to a grant from the Gordon and Betty Moore Foundation, I've enjoyed the Julia Summer of Code 2015 program administered by the NumFOCUS and a travel to the JuliaCon 2015 at Boston.
+Even though Julia had lots of practical packages for numerical computing on floating-point numbers, it lacked efficient and compatct data structures that are fundamental in bioinformatics.
+My project was about creating such data structures on sequence analysis for bioinformatics, and its goal was creating an index for full-text search.
+The full-text search index is implemented in many bioinformatics tools, most notably [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) and [BWA](http://bio-bwa.sourceforge.net/), whose papers are cited thousands of times.
+In the course towards this destination, I've created several packages that are useful as a building block for other data structures.
+I'm going to introduce you these packages in this post.
 
 
 ## IntArrays.jl
 
-[IntArrays.jl](https://github.com/bicycle1885/IntArrays.jl) is a package for unsigned integer arrays.
-So, is it useful? Yes, it is! This is because the `IntArray` type can store integers as small space as possible.
+[IntArrays.jl](https://github.com/bicycle1885/IntArrays.jl) is a package for arrays of unsigned integer.
+So, is it useful? Yes, it is! This is because the `IntArray` type implemented in this package can store integers as small space as possible.
 The `IntArray` type has a type parameter `w` that represents the number of bits required to encode elements in an array.
-For example, if each element is between 0 and 3, you only need to use two bits to encode it and `w` can be set to 2 or greater.
-These `w`-bit integers are packed into a buffer and therefore the array consumes one forth of the usual array.
+For example, if each element is an integer between 0 and 3, you only need to use two bits to encode it and `w` can be set to 2 or greater.
+These 2-bit integers are packed into a buffer and therefore the array consumes only one fourth of the space compared to the usual array.
 
-The exact type definition is `IntArray{w,T,n}`, where `w` is the number of bits for each element as I said, `T` is the type of elements,
-and `n` is the dimension of an array.
-This type is a subtype of the `AbstractArray{T,n}`, and will behave like a familiar array.
+The full type definition is `IntArray{w,T,n}`, where `w` is the number of bits for each element as I explained, `T` is the type of elements, and `n` is the dimension of the array.
+This type is a subtype of the `AbstractArray{T,n}`, and will behave like a familiar array; allocation, random access and update are supported.
 `IntVector` and `IntMatrix` are also defined like `Vector` and `Matrix`.
 
 Here is an example:
 
 ```julia
+julia> IntArray{2,UInt8}(2, 3)
+2x3 IntArrays.IntArray{2,UInt8,2}:
+ 0x00  0x00  0x01
+ 0x00  0x00  0x03
+
 julia> array = IntVector{2,UInt8}(6)
 6-element IntArrays.IntArray{2,UInt8,1}:
  0x00
@@ -58,8 +63,19 @@ julia> sort!(array)
 
 ```
 
-Since packing and unpacking integers in a buffer require extra operations, there are overheads compared to normal arrays.
-I try to keep this discrepancy as small as possible, but the `IntArray` is about 4-5 times slower when sorting:
+And the size is smaller:
+
+```julia
+julia> sizeof(IntVector{2,UInt8}(1_000_000))
+250000
+
+julia> sizeof(Vector{UInt8}(1_000_000))
+1000000
+
+```
+
+Since packing and unpacking integers in a buffer require additional operations, there are overheads in operations and `IntArray` is slower than `Array`.
+I try to keep this discrepancy as small as possible, but the `IntArray` is about 4-5 times slower when sorting it:
 
 ```julia
 julia> array = rand(0x00:0x03, 2^24);
@@ -74,13 +90,13 @@ julia> sort(iarray); @time sort(iarray);
 
 ```
 
-If you have an idea to improve the performance, please let me know!
+If you have a great idea to improve the performance, please let me know!
 
 
 ## IndexableBitVectors.jl
 
 The next package is [IndexableBitVectors.jl](https://github.com/BioJulia/IndexableBitVectors.jl).
-You must already know about the `BitVector` type in the standard library; types defined in this package is an indexable version of it.
+You must be familiar with the `BitVector` type in the standard library; types defined in this package is an indexable version of it.
 Here "indexable" means that the number of bits between an arbitrary range can be answered in constant time.
 If you are already familiar with [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure), you may know this is an important building block of other succinct data structures like wavelet trees, LOUDS, etcetera.
 
