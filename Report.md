@@ -101,12 +101,11 @@ Here "indexable" means that the number of bits between an arbitrary range can be
 If you are already familiar with [succinct data structures](https://en.wikipedia.org/wiki/Succinct_data_structure), you may know this is an important building block of other succinct data structures like wavelet trees, LOUDS, etcetera.
 
 The package exports two variants of such bit vectors: `SucVector` and `RRR`.
-`SucVector` is simpler and faster than `RRR`, but `RRR` is compressible and will be smaller if bits are localized in a bit vector.
+`SucVector` is simpler and faster than `RRR`, but `RRR` is compressible and will be smaller if 0/1 bits are localized in a bit vector.
 Both types split a bit vector into blocks and cache the number of bits up to the position.
 In `SucVector`, the extra space is about 1/4 bits per bit, so it will be ~25% larger than the original bit vector.
 
-The most important query operation over these data structures would be the `rank1(bv, i)` query, which counts the number of bits within `bv[1:i]`.
-The performance gain is really impressive:
+The most important query operation over these data structures would be the `rank1(bv, i)` query, which counts the number of 1 bits within `bv[1:i]`. Owing to the cached bit counts, we can finish the rank operation in constant time:
 
 ```julia
 julia> using IndexableBitVectors
@@ -137,31 +136,25 @@ julia> rank1(rrr, 2^29); @time rank1(rrr, 2^29);
 
 ```
 
-The `select1(bv, j)` query is also useful in many cases, which locates the `j`-th bit in the bit vector `bv`.
+The `select1(bv, j)` query is also useful in many cases, which locates the `j`-th 1 bit in the bit vector `bv`.
 For example, if a set of positive integers is represented in this bit vector, you can efficiently query the `j`-th smallest member in the set.
 
-There would be many other applications on this data structure, the next package is one of them.
+As I mentioned, this data structure can be used as a building block of various data structures. The next package I'm going to introduce is one of them.
 
 
 ## WaveletMatrices.jl
 
-You may know about the [wavelet tree](https://en.wikipedia.org/wiki/Wavelet_Tree), which supports the *rank* and *select* queries like `SucVector` and `RRR`, but elements are not restricted to boolean bits.
-In fact, the *rank* and *select* queries are available on arbitrary unsigned integer types. The wavelet tree can be thought as a generaliation of indexable bit vectors in this respect.
-What I've implemented is not the well-known wavelet tree, it is a variant of it called "wavelet matrix".
+You may know about the [wavelet tree](https://en.wikipedia.org/wiki/Wavelet_Tree), which supports the *rank* and *select* queries like `SucVector` and `RRR`, but elements are not restricted to 0/1 bits.
+In fact, the *rank* and *select* queries are available on arbitrary unsigned integers. The wavelet tree can be thought as a generaliation of indexable bit vectors in this respect.
+What I've implemented is not the well-known wavelet tree, a variant of it called "wavelet matrix".
 You can find an implementation and an original paper at [WaveletMatrices.jl](https://github.com/BioJulia/WaveletMatrices.jl).
 According to the authors of the paper, the wavelet matrix is "simpler to build, simpler to query, and faster in practice than the levelwise wavelet tree".
+
 The `WaveletMatrix` type takes three type parameters: `w`, `T`, and `B`.
-`w` and `T` are similar to `IntArray{w,T,n}`, and `B` is a type of indexable bit vector.
+`w` and `T` are analogous to those of `IntArray{w,T,n}`, and `B` is a type of indexable bit vector.
 
 ```julia
 julia> using WaveletMatrices
-
-julia> WaveletMatrix{2}([0x00, 0x01, 0x02, 0x03])
-4-element WaveletMatrices.WaveletMatrix{2,UInt8,IndexableBitVectors.SucVector}:
- 0x00
- 0x01
- 0x02
- 0x03
 
 julia> wm = WaveletMatrix{2}([0x00, 0x01, 0x02, 0x03])
 4-element WaveletMatrices.WaveletMatrix{2,UInt8,IndexableBitVectors.SucVector}:
@@ -179,24 +172,48 @@ julia> rank(0x02, wm, 2)
 julia> rank(0x02, wm, 3)
 1
 
+julia> xs = rand(0x00:0x03, 2^16);
+
+julia> wm = WaveletMatrix{2}(xs);  # 2-bit encoding
+
+julia> sum(xs[1:2^15] .== 0x03)
+8171
+
+julia> rank(0x03, wm, 2^15)
+8171
+
 ```
 
-There are other operations that the wavelet matrix can run efficiently.
-Those operations will be added in the future. WaveletMatrices.jl will be much more useful.
+There are other operations that the wavelet matrix can run efficiently and those operations will be added in the future.
 
 
-## FMIndices.jl
+## FMIndexes.jl
 
-Yes, this is the final package I made.
-90% of sequence analysis in bioinformatics is about sequence search.
-Pattern search, homologous gene search, genome comparison, short-read mapping, etc.
-The [FM-Index](https://en.wikipedia.org/wiki/FM-index) is often regarded as the most efficient index for full-text search (citation needed) and I've implemented it in the [FMIndices.jl](https://github.com/BioJulia/FMIndices.jl) package.
+80% of sequence analysis in bioinformatics is about sequence search, which includes pattern search, homologous gene search, genome comparison, short-read mapping, and so on.
+The [FM-Index](https://en.wikipedia.org/wiki/FM-index) is often regarded as the most efficient index for full-text search (citation needed), and I've implemented it in the [FMIndexes.jl](https://github.com/BioJulia/FMIndexes.jl) package.
 Thanks to the packages I've introduced so far, the code of it looks really simple.
+For example, counting the number of occurrences of a given pattern in a text can be written as follows (simplified for explanatory purpose):
 
-A unique property the FM-Index has is that an index itself is just a permutation of characters of the original text and character counts.
-This permutation is called [Burrows-Wheeler transform](https://en.wikipedia.org/wiki/Burrows%E2%80%93Wheeler_transform) (also known as BWT), and the permuted text is stored into a wavelet matrix (or a wavelet tree) to efficiently count the number of characters in a region.
-Therefore, the space required to index a text will not become so large as other full-text indices (efficiently locating query positions needs auxiliary data as well).
-Moreover, this transform is bijective, hence the original text can be restored from an index.
+```julia
+function count(query, index::FMIndex)
+    sp, ep = 1, length(index)
+    # backward search
+    i = length(query)
+    while sp ≤ ep && i ≥ 1
+        char = convert(UInt8, query[i])
+        c = index.count[char+1]
+        sp = c + rank(char, index.bwt, sp - 1) + 1
+        ep = c + rank(char, index.bwt, ep)
+        i -= 1
+    end
+    return length(sp:ep)
+end
+```
+
+A unique property of FM-Index is that an index itself is just a permutation of characters of the original text and character counts.
+This permutation is called [Burrows-Wheeler transform](https://en.wikipedia.org/wiki/Burrows%E2%80%93Wheeler_transform) (also known as BWT), and the permuted text is stored in a wavelet matrix (or a wavelet tree) to efficiently count the number of characters within a specific region.
+Therefore, the space required to index a text is often smaller than that of other full-text indices (in practice, efficiently finding positions of a query needs auxiliary data as well).
+Moreover, this transform is [bijective](https://en.wikipedia.org/wiki/Bijection), and thus the original text can be restored from an index.
 
 The `FMIndex` type supports two main queries: `count` and `locate`.
 The `count(query, index)` query literally counts the number of occurrences of the `query` string and the `locate(query, index)` locates starting positions of the `query`.
@@ -235,7 +252,6 @@ julia> bytestring(restore(fmindex))
 
 ```
 
-At the moment, indexable texts are limited to a byte sequence.
 
 
 ## Applications
