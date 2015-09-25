@@ -145,7 +145,7 @@ As I mentioned, this data structure can be used as a building block of various d
 ## WaveletMatrices.jl
 
 You may know about the [wavelet tree](https://en.wikipedia.org/wiki/Wavelet_Tree), which supports the *rank* and *select* queries like `SucVector` and `RRR`, but elements are not restricted to 0/1 bits.
-In fact, the *rank* and *select* queries are available on arbitrary unsigned integers. The wavelet tree can be thought as a generaliation of indexable bit vectors in this respect.
+In fact, the *rank* and *select* queries are available on arbitrary unsigned integers. The wavelet tree can be thought as a generalization of indexable bit vectors in this respect.
 What I've implemented is not the well-known wavelet tree, a variant of it called "wavelet matrix".
 You can find an implementation and an original paper at [WaveletMatrices.jl](https://github.com/BioJulia/WaveletMatrices.jl).
 According to the authors of the paper, the wavelet matrix is "simpler to build, simpler to query, and faster in practice than the levelwise wavelet tree".
@@ -231,9 +231,6 @@ julia> count("a", fmindex)
 julia> count("abra", fmindex)
 2
 
-julia> count("abrac", fmindex)
-1
-
 julia> locate("a", fmindex) |> collect
 5-element Array{Any,1}:
  11
@@ -252,14 +249,92 @@ julia> bytestring(restore(fmindex))
 
 ```
 
+As an example, for bioinformaticians, let's try several queries on a chromosome.
+The next script reads a chromosome from a FASTA file, build an FM-Index, and then serialize it into a file for later use.
+
+**index.jl**:
+```julia
+using Bio.Seq
+using IntArrays
+using FMIndexes
+
+# encode a DNA sequence with 3-bit unsigned integers
+function encode(seq)
+    encoded = IntVector{3,UInt8}(length(seq))
+    for i in 1:endof(seq)
+        encoded[i] = convert(UInt8, seq[i])
+    end
+    return encoded
+end
+
+# read a chromosome from a FASTA file
+filepath = ARGS[1]
+record = first(open(filepath, FASTA))
+println(record.name, ": ", length(record.seq), "bp")
+# build an FM-Index
+fmindex = FMIndex(encode(record.seq))
+# save it in a file file
+open(string(filepath, ".index"), "w+") do io
+    serialize(io, fmindex)
+end
+```
+
+OK, then create an index for chromosome 22 of human (you can download it from [here](http://hgdownload.cse.ucsc.edu/goldenPath/hg38/chromosomes/)):
+
+```
+$ julia4 index.jl chr22.fa
+chr22: 50818468bp
+$ ls -lh chr22.fa.index
+-rw-r--r--+ 1 kenta  staff    74M  9 26 06:30 chr22.fa.index
+```
+
+After construction finished (this will take several minutes), read the index in REPL:
+
+```julia
+julia> using FMIndexes
+
+julia> fmindex = open(deserialize, "chr22.fa.index");
+
+```
+
+Now that you can execute queries to search a DNA fragment:
+
+```julia
+julia> using Bio.Seq
+
+julia> count(dna"GACTTTCAC", fmindex)  # this DNA fragment hits at 111 locations
+111
+
+julia> count(dna"GACTTTCACTTT", fmindex)  # this hits at 3 locations
+3
+
+julia> locate(dna"GACTTTCACTTT", fmindex) |> collect  # the loci of these hits
+3-element Array{Any,1}:
+ 36253071
+ 47308573
+ 34159872
+
+julia> count(dna"GACTTTCACTTTCCC", fmindex)  # found a unique hit!
+1
+
+julia> locate(dna"GACTTTCACTTTCCC", fmindex) |> collect
+1-element Array{Any,1}:
+ 36253071
+
+julia> @time locate(dna"GACTTTCACTTTCCC", fmindex);  # this can be located in 32 μs!
+  0.000032 seconds (5 allocations: 192 bytes)
+
+```
+
+The locus,  [chr22:36253071](https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr22%3A36253071-36253120&hgsid=446220019_CeC0woSUOd5ov3GLph7a6fs5Uryo), is the starting position of the *APOL1* gene.
 
 
 ## Applications
 
-The aim of having created these packages is to prove that Julia is a suitable language to implement this kind of data structures.
+My aim of having created these packages was to prove that it is practicable to implement high-performance data structures for bioinformatics in Julia.
 I'm pretty sure that it is true, but it may be skeptical to others.
 So, I'm going to prove it by writing a useful and performant application using these packages.
-Now I'm working on [FMM.jl](https://github.com/bicycle1885/FMM.jl), which aligns massive amounts of DNA fragments to a genome sequence.
+Now I'm working on [FMM.jl](https://github.com/bicycle1885/FMM.jl), which aligns massive amounts of DNA fragments to a genome sequence using the FM-Index and other algorithms.
 
 The [BioJulia](https://github.com/BioJulia) project is also under active development.
 The packages I made are intended to work with the [Bio.jl](https://github.com/BioJulia/Bio.jl) package.
